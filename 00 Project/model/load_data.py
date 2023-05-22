@@ -11,6 +11,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import TensorDataset
 from imblearn.over_sampling import RandomOverSampler
 from torch.utils.data import TensorDataset, random_split, DataLoader, RandomSampler, SequentialSampler
+from sklearn.model_selection import train_test_split
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -66,3 +67,31 @@ def GENERATE_DATALOADER(input_ids, attention_mask, labels, batch_size = 64, use_
         sampler = SequentialSampler(test_dataset),
         batch_size = batch_size)
     return train_dataloader, validation_dataloader, test_dataloader
+
+
+class NLPDataset(Dataset):
+    def __init__(self, sequences, labels):
+        self.sequences = sequences
+        self.labels = labels
+    
+    def __len__(self):
+        return len(self.sequences)
+    
+    def __getitem__(self, index):
+        sequence = self.sequences[index]
+        label = self.labels[index]
+        return sequence, label
+    
+def process_data(input_ids, labels):
+    train_sequences, test_sequences, train_labels, test_labels = train_test_split(input_ids, labels, test_size = 0.20, random_state = 42)
+    train_sequences, val_sequences,  train_labels, val_labels  = train_test_split(train_sequences,  train_labels, test_size = 0.15, random_state = 42)
+
+    BATCH_SIZE = 64
+
+    train_dataset = NLPDataset(train_sequences, train_labels)
+    valid_dataset = NLPDataset(val_sequences, val_labels)
+    tests_dataset = NLPDataset(test_sequences, test_labels)
+
+    train_loader = DataLoader(train_dataset, batch_size = BATCH_SIZE, shuffle = True)
+    valid_loader = DataLoader(valid_dataset, batch_size = BATCH_SIZE, shuffle = False)
+    tests_loader = DataLoader(tests_dataset, batch_size = BATCH_SIZE, shuffle = False)
